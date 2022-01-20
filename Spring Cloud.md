@@ -693,5 +693,126 @@ public class zuulProxy_9527 {
 
 ## SpringCloud Config分布式配置中心
 
+springcloud配置中心把服务分为服务端和客户端
 
+服务端也称为 **分布式配置中心**，它是一个独立的微服务应用，用来连接配置服务器并为客户端提供获取配置信息，加密，解密信息等访问接口。
+
+客户端则是**通过指定的配置中心来管理应用资源，以及与业务相关的配置内容，并在启动的时候从配置中心获取和加载配置信息**。配置服务器默认采用git来存储配置信息，这样就有助于对环境配置进行版本管理。并且可用通过git客户端工具来方便的管理和访问配置内容。
+
+**spring cloud config 分布式配置中心能干嘛？**
+
+- 集中式管理配置文件
+- 不同环境，不同配置，动态化的配置更新，分环境部署，比如 /dev /test /prod /beta /release
+- 运行期间动态调整配置，不再需要在每个服务部署的机器上编写配置文件，服务会向配置中心统一拉取配置自己的信息
+- 当配置发生变动时，服务不需要重启，即可感知到配置的变化，并应用新的配置
+- 将配置信息以REST接口的形式暴露
+
+##### server端
+
+通过springcloud-config，访问git库某文件成功！
+
+![image-20220120173415386](C:\Users\Asus\AppData\Roaming\Typora\typora-user-images\image-20220120173415386.png)
+
+流程
+
+```java
+//开启config
+@EnableConfigServer
+@SpringBootApplication
+public class ConfigServer_3344 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigServer_3344.class,args);
+    }
+}
+
+```
+
+进行git配置
+
+```
+server:
+  port: 3344
+spring:
+  application:
+    name: springcloud-config-server
+  # 连接码云远程仓库
+  cloud:
+    config:
+      server:
+        git:
+          # 注意是https的而不是ssh
+          uri: https://github.com/mumumuyu/TDoc.git
+          # 通过 config-server可以连接到git，访问其中的资源以及配置~
+# 不加这个配置会报Cannot execute request on any known server 这个错：连接Eureka服务端地址不对
+# 或者直接注释掉eureka依赖 这里暂时用不到eureka
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+```
+
+pom
+
+```.xml
+<dependencies>
+        <!--web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!--config-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+            <version>2.1.1.RELEASE</version>
+        </dependency>
+        <!--eureka-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-eureka</artifactId>
+            <version>1.4.6.RELEASE</version>
+        </dependency>
+    </dependencies>
+```
+
+##### client端
+
+消费者通过服务端获取信息
+
+![image-20220120205617583](C:\Users\Asus\AppData\Roaming\Typora\typora-user-images\image-20220120205617583.png)
+
+```java
+@RestController
+public class ConfigClientController {
+    @Value("${spring.application.name}")
+    private String applicationName; //获取微服务名称
+    @Value("${eureka.client.service-url.defaultZone}")
+    private String eurekaServer; //获取Eureka服务
+    @Value("${server.port}")
+    private String port; //获取服务端的端口号
+    @RequestMapping("/config")
+    public String getConfig(){
+        return "applicationName:"+applicationName +
+                "eurekaServer:"+eurekaServer +
+                "port:"+port;
+    }
+}
+```
+
+```yml
+# bootstrap.yml
+# 系统级别的配置
+spring:
+  cloud:
+    config:
+      name: config-server # 需要从git上读取的资源名称，不要后缀
+      profile: dev
+      label: master
+      uri: http://localhost:3344
+# application.yml
+# 用户级别的配置
+spring:
+  application:
+    name: springcloud-config-server
+```
 
