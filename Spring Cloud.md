@@ -1,5 +1,27 @@
 # Spring Cloud
 
+中文文档:https://www.springcloud.cc/spring-cloud-dalston.html
+
+- 微服务与微服务架构
+- 基础工程 RestTemplate
+- Eureka（AP，保证效率）
+  - 集群配置
+  - 对比Zookeeper(要重新选主节点，保证一致性CP)
+- Ribbon
+  - IRule
+- Feign
+  - 面向接口，社区要求
+- Hystrix
+  - 熔断
+  - 降级
+  - dashboard
+- Zuul路由网关
+  - 路由，拦截，过滤
+- SpringCloud Config配置
+  - C/S-Git
+
+基本就是导入依赖——编写配置——开启@EnableXXX，具体yml自己配置
+
 Dubbo,Zookeeper/分布式基础
 
 Spring,轻量级容器，管理Bean，简化开发
@@ -815,4 +837,56 @@ spring:
   application:
     name: springcloud-config-server
 ```
+
+实战：自己远程配置eureka以及provider的config
+
+![image-20220121135059897](C:\Users\Asus\AppData\Roaming\Typora\typora-user-images\image-20220121135059897.png)
+
+成功！！！
+
+同理：
+
+就是个pom
+
+```xml
+        <!--config-->
+        <!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-start -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+            <version>2.1.1.RELEASE</version>
+        </dependency>
+```
+
+两个yml配置
+
+```yml
+#application.yml
+spring:
+  application:
+    name: springcloud-config-eureka
+#bootstrap.yml
+# 系统级别的配置
+spring:
+  cloud:
+    config:
+      name: config-eureka # 需要从git上读取的资源名称，不要后缀
+      profile: dev
+      label: master
+      uri: http://localhost:3344
+     
+#或者也可以自己去直接连
+spring:
+  application:
+    name: springcloud-config-server
+  # 连接码云远程仓库
+  cloud:
+    config:
+      server:
+        git:
+          # 注意是https的而不是ssh
+          uri: https://github.com/mumumuyu/TDoc.git
+```
+
+若没成功基本就是网络问题，github进不去这样
 
